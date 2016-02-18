@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 ##
 # This is a script to deploy a read-only centos cluster. It is divided in two parts: the server-side and the client-side.
-# See update-script --help|-?|-h|--usage for help. You must be root or in the sudoers to run this script!
+# See update-script --help|-h|--usage for help. You must be root or in the sudoers to run this script!
 #
 #    Copyright (C) 2016 J. Desroches <joachim.desroches@epfl.ch>
 #
@@ -23,41 +23,258 @@
 ##
 # check for root / sudoers rights
 ##
-if [[ $EUID -ne 0 ]]; then
+if [ $EUID -ne 0 ]; then
 	sudo -v > /dev/null;
-	if [[ $? -ne 0 ]]; then
+	if [ $? -ne 0 ]; then
 		echo "sorry, but you are neither root nor have sudo privileges. You cannot run this script successfully."
 		echo "exiting... try with another user."
 		exit;
 	else
-		PRIV='sudo ';
+		priv='sudo';
 	fi
-else
-	PRIV='';
 fi
-
-echo $PRIV
 
 ##
 # parse args
 ##
-# cli
-# interactive
+
+# options we are going to use are:
+helprun=0;
+force_flag=0;
+update_command="yum update";
+server_ip=10.0.0.1;
+server_pxeboot_path='/data/install/spool/pxeboot/centos';
+kernel_name='vmlinuz_latest';
+initrd_name='initramfs-nfs-latest.img';
+
+# defaults?
+if [ $# = 0 ]; then
+	echo "Are you sure you want to run the script with the following defaults?"
+	echo "  update command=$update_command";
+	echo "  server ip=$server_ip";
+	echo "  server pxeboot path=$server_pxeboot_path";
+	echo "  kernel name=$kernel_name";
+	echo "  initrd name=$initrd_name";
+	echo -n '[Yy|Nn]'
+	read answer;
+	case $answer in 
+		Y|y)
+			;;
+		*)
+			echo "Stopping script..."
+			exit
+			;;
+	esac;
+fi
+# parser
+while [ $# -gt 0 ]; do
+	key=$1;
+	case $key in
+		-h|--help|--usage)
+			helprun=1;
+			shift
+			;;
+		-u|--update-command)
+			# check if a value was given.
+			if [ $2 = '' ]; then
+				echo 'You must provide a (quoted) command with the -u flag. See update-script -h';
+				exit;
+			fi
+			update_command=$2;
+			shift 2;
+			;;
+		-f|--force)
+			# enable to force execution even in case of update failure.
+			# mainly used for package managers who will exit with non-zero codes.
+			force_flag=1;
+			shift;
+			;;
+		-s|--server-ip)
+			# check if a value was given.
+			if [ $2 = '' ]; then
+				echo "You must provide a value with the $1 flag. See update-script -h";
+				exit;
+			fi
+			server_ip=$2;
+			shift 2;
+			;;
+		-p|--pxeboot-path)
+			# check if a value was given.
+			if [ $2 = '' ]; then
+				echo "You must provide a value with the $1 flag. See update-script -h";
+				exit;
+			fi
+			server_pxeboot_path=$2;
+			shift 2;
+			;;
+		-k|--kernel-name)
+			# check if a value was given.
+			if [ $2 = '' ]; then
+				echo "You must provide a value with the $1 flag. See update-script -h";
+				exit;
+			fi
+			kernel_name=$2;
+			shift 2;
+			;;
+		-i|--initrd-name)
+			# check if a value was given.
+			if [ $2 = '' ]; then
+				echo "You must provide a value with the $1 flag. See update-script -h";
+				exit;
+			fi
+			initrd_name=$2;
+			shift 2;
+			;;
+		*)
+			echo "option $1 unknown. Try install-script -h";
+			exit;
+			;;
+	esac;
+done;
 
 ##
 # help
 ##
+if [ $helprun = 1 ]; then
+	echo 'update-script -h'
+	echo -e 'update-script [-u|--update-command <update command>][-s|--server-ip <nfs server ip>][-p|--pxeboot-path <path to pxeboot dir>][-k|--kernel-name <kernel name in pxeboot settings>][-i|--initrd-name <initrd image name in pxeboot settings>]'
+	echo '  This scipt is wrapper around whichever package manager you wish to update a read-only system by remounting it as rw, then again ro. If there is a kernel update it will push the necessary files  to the associated nfs server.'
+	echo '  Default values are:'
+	echo "    update command=$update_command";
+	echo "    server ip=$server_ip";
+	echo "    server pxeboot path=$server_pxeboot_path";
+	echo "    kernel name=$kernel_name";
+	echo "    initrd name=$initrd_name";
+	exit;
+fi
 
 ##
 # pass from RO to RW
 ##
+# use the priv variable to determine if we sudo or are already root
+echo -n "remounting / as read-write... "
+#echo "$priv mount -o remount,rw /"
+if [ $? = 0 ]; then
+	echo "ok"
+else
+	echo "mount failed with exit code $?" # Maybe do some more detailed failure treatement?
+	exit;
+fi
 
 ##
 # update procedure
 ##
+echo "Launching $update_command commmand - over to you."
+`$update_command`
+if [ $? -ne 0 ]; then
+	if [ $force_flag -ne 1 ]; then
+		echo "$update_command exited with non-zero exit code. Assuming failure and exiting. Use -f to force checking for new kernel."
+		echo -n "remounting file-system as read-only..."
+		mount -o remount,ro /
+		if [ $? = 0 ]; then
+			echo " ok!"
+		else
+			echo "remounting failed. Please do so manually."
+		fi
+		exit;
+	fi
+fi
 
 ##
 # new kernel?
 ##
-# if yes, push initrd and kernel image to pxeboot, saving the last ones.
 
+## new flag: 2 is nothing new
+## 	     1 is found kernel
+##           0 is found kernel and initrd - proceed.
+new=2
+# check for new files in the boot dir
+find /boot -maxdepth 1 -mmin -5 > .newfiles;
+grep vmlinuz .newfiles > .newkernel;
+if [ $? = 0 ]; then
+	echo "Found a new kernel: `cat .newkernel`";
+	echo -n "Is this correct? [Yy|Nn]";
+	read answer;
+	case $answer in
+		y|Y)
+			new=1;
+			new_kern=$answer;
+			;;
+		*)
+			echo "Did not find correct new kernel. Please do things by hand or hack this script if it doesn't work for you."
+			echo -n "remounting file-system as read-only..."
+			mount -o remount,ro /
+			if [ $? = 0 ]; then
+				echo " ok!"
+			else
+				echo "remounting failed. Please do so manually."
+			fi
+			exit;
+			;;
+	esac;
+fi
+grep initramfs|initrd .newfiles > .newinitrd;
+if [ $? = 0 ]; then
+	echo "Found a new initrd: `cat .newinitrd`";
+	echo -n "Is this correct? [Yy|Nn]";
+	read answer;
+	case $answer in
+		y|Y)
+			new=0;
+			new_initrd=$answer;
+			;;
+		*)
+			echo "Did not find correct initrd. Please do things by hand or hack this script if it doesn't work for you."
+			echo -n "remounting file-system as read-only..."
+			mount -o remount,ro /
+			if [ $? = 0 ]; then
+				echo " ok!"
+			else
+				echo "remounting failed. Please do so manually."
+			fi
+			exit;
+			;;
+	esac;
+fi
+
+# if yes, push initrd and kernel image to pxeboot, saving the last ones.
+if [ $new = 0 ]; then
+	echo "copying new kernel to server..."
+	scp /boot/$new_kern root@$server_ip:$server_pxeboot_path/$kernel_name;
+	if [ $? -ne 0 ]; then
+		echo "sending the new kernel failed with error code $?. Aborting..."
+		echo -n "remounting file-system as read-only..."
+		mount -o remount,ro /
+		if [ $? = 0 ]; then
+			echo " ok!"
+		else
+			echo "remounting failed. Please do so manually."
+		fi
+		exit;
+	fi
+	echo "copying new initrd to server..."
+	scp /boot/$new_initrd root@server_ip:$server_pxeboot_path/$initrd_name;
+	if [ $? -ne 0 ]; then
+		echo "sending the new initrd failed with error code $?. Aborting..."
+		echo -n "remounting file-system as read-only..."
+		mount -o remount,ro /
+		if [ $? = 0 ]; then
+			echo " ok!"
+		else
+			echo "remounting failed. Please do so manually."
+		fi
+		exit;
+	fi
+
+##
+# back to RO
+##
+echo -n "remounting file-system as read-only..."
+mount -o remount,ro /
+if [ $? = 0 ]; then
+	echo " ok!"
+	echo "Everything went as expected! You can now reboot your clients."
+else
+	echo "remounting failed. Please do so manually."
+fi
+exit;
