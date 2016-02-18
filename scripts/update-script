@@ -1,0 +1,49 @@
+#!/bin/bash
+
+##
+# This is a script to deploy a read-only centos cluster. It is divided in two parts: the server-side and the client-side.
+# See update-script --help|-?|-h|--usage for help. You must be root or in the sudoers to run this script!
+#
+#    Copyright (C) 2016 J. Desroches <joachim.desroches@epfl.ch>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+
+##
+# check for root / sudoers rights
+##
+
+##
+# parse args
+##
+# cli
+# interactive
+
+##
+# help
+##
+
+##
+# pass from RO to RW
+##
+
+##
+# update procedure
+##
+
+##
+# new kernel?
+##
+# if yes, push initrd and kernel image to pxeboot, saving the last ones.
+
