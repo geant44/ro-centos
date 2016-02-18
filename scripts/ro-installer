@@ -1,0 +1,65 @@
+#!/bin/bash
+
+##
+# This is a script to deploy a read-only centos cluster. It is divided in two parts: the server-side and the client-side.
+# See ro-installer --help|-?|-h|--usage for help. You must be root or in the sudoers to run this script!
+#
+#    Copyright (C) 2016 J. Desroches <joachim.desroches@epfl.ch>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+
+##
+# Check for root or sudo rights.
+##
+
+##
+# argument parsing
+##
+
+# parse args
+# interactive config
+## server
+## client
+
+##
+# help section
+##
+
+##
+# checking for the availability of base utilities
+##
+
+##
+# server installation
+##
+
+# checking for necessary packages and installing if necessary
+# (opt) creation of pxeboot structure et al.
+# (opt) creation of client root structure
+# (opt) creation of client state structure
+# start different systemd services and check all is right.
+
+##
+# client installation
+##
+
+# check for necessary packages and install if necessary
+# (opt) check for correct disk setup
+# add necessary lines to rwtab and statetab
+# modify /etc/sysconfig/readonly-root
+# write /etc/dracut.conf
+# generate initrd
+# cp initramfs and files to server
+# ssh into server and cleanup.
