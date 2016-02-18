@@ -23,6 +23,20 @@
 ##
 # check for root / sudoers rights
 ##
+if [[ $EUID -ne 0 ]]; then
+	sudo -v > /dev/null;
+	if [[ $? -ne 0 ]]; then
+		echo "sorry, but you are neither root nor have sudo privileges. You cannot run this script successfully."
+		echo "exiting... try with another user."
+		exit;
+	else
+		PRIV='sudo ';
+	fi
+else
+	PRIV='';
+fi
+
+echo $PRIV
 
 ##
 # parse args
