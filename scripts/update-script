@@ -23,7 +23,7 @@
 ##
 # check for root / sudoers rights
 ##
-if [ $EUID -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
 	sudo -v > /dev/null;
 	if [ $? -ne 0 ]; then
 		echo "sorry, but you are neither root nor have sudo privileges. You cannot run this script successfully."
@@ -32,6 +32,8 @@ if [ $EUID -ne 0 ]; then
 	else
 		priv='sudo';
 	fi
+else
+	priv=''
 fi
 
 ##
@@ -55,8 +57,8 @@ if [ $# = 0 ]; then
 	echo "  server pxeboot path=$server_pxeboot_path";
 	echo "  kernel name=$kernel_name";
 	echo "  initrd name=$initrd_name";
-	echo -n '[Yy|Nn]'
-	read answer;
+	echo '[Yy|Nn]'
+	read -r answer;
 	case $answer in 
 		Y|y)
 			;;
@@ -76,7 +78,7 @@ while [ $# -gt 0 ]; do
 			;;
 		-u|--update-command)
 			# check if a value was given.
-			if [ $2 = '' ]; then
+			if [ "$2" = '' ]; then
 				echo 'You must provide a (quoted) command with the -u flag. See update-script -h';
 				exit;
 			fi
@@ -91,7 +93,7 @@ while [ $# -gt 0 ]; do
 			;;
 		-s|--server-ip)
 			# check if a value was given.
-			if [ $2 = '' ]; then
+			if [ "$2" = '' ]; then
 				echo "You must provide a value with the $1 flag. See update-script -h";
 				exit;
 			fi
@@ -100,7 +102,7 @@ while [ $# -gt 0 ]; do
 			;;
 		-p|--pxeboot-path)
 			# check if a value was given.
-			if [ $2 = '' ]; then
+			if [ "$2" = '' ]; then
 				echo "You must provide a value with the $1 flag. See update-script -h";
 				exit;
 			fi
@@ -109,7 +111,7 @@ while [ $# -gt 0 ]; do
 			;;
 		-k|--kernel-name)
 			# check if a value was given.
-			if [ $2 = '' ]; then
+			if [ "$2" = '' ]; then
 				echo "You must provide a value with the $1 flag. See update-script -h";
 				exit;
 			fi
@@ -118,7 +120,7 @@ while [ $# -gt 0 ]; do
 			;;
 		-i|--initrd-name)
 			# check if a value was given.
-			if [ $2 = '' ]; then
+			if [ "$2" = '' ]; then
 				echo "You must provide a value with the $1 flag. See update-script -h";
 				exit;
 			fi
@@ -136,8 +138,8 @@ done;
 # help
 ##
 if [ $helprun = 1 ]; then
-	echo 'update-script -h'
-	echo -e 'update-script [-u|--update-command <update command>][-s|--server-ip <nfs server ip>][-p|--pxeboot-path <path to pxeboot dir>][-k|--kernel-name <kernel name in pxeboot settings>][-i|--initrd-name <initrd image name in pxeboot settings>]'
+	echo 'update-script  -h'
+	echo 'update-script [-u|--update-command <update command>][-s|--server-ip <nfs server ip>][-p|--pxeboot-path <path to pxeboot dir>][-k|--kernel-name <kernel name in pxeboot settings>][-i|--initrd-name <initrd image name in pxeboot settings>]'
 	echo '  This scipt is wrapper around whichever package manager you wish to update a read-only system by remounting it as rw, then again ro. If there is a kernel update it will push the necessary files  to the associated nfs server.'
 	echo '  Default values are:'
 	echo "    update command=$update_command";
@@ -152,8 +154,8 @@ fi
 # pass from RO to RW
 ##
 # use the priv variable to determine if we sudo or are already root
-echo -n "remounting / as read-write... "
-#echo "$priv mount -o remount,rw /"
+echo 'remounting / as read-write... '
+$priv mount -o remount,rw /
 if [ $? = 0 ]; then
 	echo "ok"
 else
@@ -165,11 +167,11 @@ fi
 # update procedure
 ##
 echo "Launching $update_command commmand - over to you."
-`$update_command`
+$update_command
 if [ $? -ne 0 ]; then
 	if [ $force_flag -ne 1 ]; then
 		echo "$update_command exited with non-zero exit code. Assuming failure and exiting. Use -f to force checking for new kernel."
-		echo -n "remounting file-system as read-only..."
+		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
 			echo " ok!"
@@ -192,9 +194,9 @@ new=2
 find /boot -maxdepth 1 -mmin -5 > .newfiles;
 grep vmlinuz .newfiles > .newkernel;
 if [ $? = 0 ]; then
-	echo "Found a new kernel: `cat .newkernel`";
-	echo -n "Is this correct? [Yy|Nn]";
-	read answer;
+	echo "Found a new kernel: $(cat .newkernel)";
+	echo "Is this correct? [Yy|Nn]";
+	read -r answer;
 	case $answer in
 		y|Y)
 			new=1;
@@ -202,7 +204,7 @@ if [ $? = 0 ]; then
 			;;
 		*)
 			echo "Did not find correct new kernel. Please do things by hand or hack this script if it doesn't work for you."
-			echo -n "remounting file-system as read-only..."
+			echo "remounting file-system as read-only..."
 			mount -o remount,ro /
 			if [ $? = 0 ]; then
 				echo " ok!"
@@ -215,9 +217,9 @@ if [ $? = 0 ]; then
 fi
 grep initramfs|initrd .newfiles > .newinitrd;
 if [ $? = 0 ]; then
-	echo "Found a new initrd: `cat .newinitrd`";
-	echo -n "Is this correct? [Yy|Nn]";
-	read answer;
+	echo "Found a new initrd: $(cat .newinitrd)";
+	echo "Is this correct? [Yy|Nn]";
+	read -r answer;
 	case $answer in
 		y|Y)
 			new=0;
@@ -225,7 +227,7 @@ if [ $? = 0 ]; then
 			;;
 		*)
 			echo "Did not find correct initrd. Please do things by hand or hack this script if it doesn't work for you."
-			echo -n "remounting file-system as read-only..."
+			echo "remounting file-system as read-only..."
 			mount -o remount,ro /
 			if [ $? = 0 ]; then
 				echo " ok!"
@@ -240,10 +242,10 @@ fi
 # if yes, push initrd and kernel image to pxeboot, saving the last ones.
 if [ $new = 0 ]; then
 	echo "copying new kernel to server..."
-	scp /boot/$new_kern root@$server_ip:$server_pxeboot_path/$kernel_name;
+	scp /boot/"$new_kern" root@"$server_ip":"$server_pxeboot_path"/"$kernel_name";
 	if [ $? -ne 0 ]; then
 		echo "sending the new kernel failed with error code $?. Aborting..."
-		echo -n "remounting file-system as read-only..."
+		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
 			echo " ok!"
@@ -253,10 +255,10 @@ if [ $new = 0 ]; then
 		exit;
 	fi
 	echo "copying new initrd to server..."
-	scp /boot/$new_initrd root@server_ip:$server_pxeboot_path/$initrd_name;
+	scp /boot/"$new_initrd" root@server_ip:"$server_pxeboot_path"/"$initrd_name";
 	if [ $? -ne 0 ]; then
 		echo "sending the new initrd failed with error code $?. Aborting..."
-		echo -n "remounting file-system as read-only..."
+		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
 			echo " ok!"
@@ -265,11 +267,12 @@ if [ $new = 0 ]; then
 		fi
 		exit;
 	fi
+fi
 
 ##
 # back to RO
 ##
-echo -n "remounting file-system as read-only..."
+echo "remounting file-system as read-only..."
 mount -o remount,ro /
 if [ $? = 0 ]; then
 	echo " ok!"
