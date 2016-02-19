@@ -241,6 +241,26 @@ fi
 
 # if yes, push initrd and kernel image to pxeboot, saving the last ones.
 if [ $new = 0 ]; then
+	# backup precedent kernel + initrd
+	echo "backing up kernel and initrd to $kernel_name.old and $initrd_name.old..."
+	ssh root@"$server_ip" cp "$server_pxeboot_path"/"$kernel_name" "$server_pxeboot_path"/"$kernel_name".old
+	if [ $? = 0 ]; then
+		echo "ok"
+	else
+		if [ $force_flag -ne 1 ]; then
+			echo "failed to copy old kernel. Aborting... use -f flag to circumvent." # Maybe do some more detailed failure treatement?
+			exit;
+		fi
+	fi
+	ssh root@"$server_ip" cp "$server_pxeboot_path"/"$initrd_name" "$server_pxeboot_path"/"$initrd_name".old
+	if [ $? = 0 ]; then
+		echo "ok"
+	else
+		if [ $force_flag -ne 1 ]; then
+			echo "failed to copy old kernel. Aborting... use -f flag to circumvent." # Maybe do some more detailed failure treatement?
+			exit;
+		fi
+	fi
 	echo "copying new kernel to server..."
 	scp /boot/"$new_kern" root@"$server_ip":"$server_pxeboot_path"/"$kernel_name";
 	if [ $? -ne 0 ]; then
