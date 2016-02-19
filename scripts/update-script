@@ -215,7 +215,7 @@ if [ $? = 0 ]; then
 			;;
 	esac;
 fi
-grep initramfs|initrd .newfiles > .newinitrd;
+grep initramfs .newfiles > .newinitrd;
 if [ $? = 0 ]; then
 	echo "Found a new initrd: $(cat .newinitrd)";
 	echo "Is this correct? [Yy|Nn]";
