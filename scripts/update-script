@@ -45,8 +45,8 @@ helprun=0;
 force_flag=0;
 update_command="yum update";
 server_ip=10.0.0.1;
-server_pxeboot_path='/data/install/spool/pxeboot/centos';
-kernel_name='vmlinuz_latest';
+server_pxeboot_path='/data/install/spool/tftpboot/pxeboot/centos';
+kernel_name='vmlinuz-latest';
 initrd_name='initramfs-nfs-latest.img';
 
 # defaults?
@@ -154,31 +154,38 @@ fi
 # pass from RO to RW
 ##
 # use the priv variable to determine if we sudo or are already root
-echo 'remounting / as read-write... '
+echo '==================================================='
+echo 'Arguments are correct. Remounting / as read-write... '
 $priv mount -o remount,rw /
 if [ $? = 0 ]; then
 	echo "ok"
+	echo '==================================================='
 else
 	echo "mount failed with exit code $?" # Maybe do some more detailed failure treatement?
+	echo '==================================================='
 	exit;
 fi
 
 ##
 # update procedure
 ##
+echo '==================================================='
 echo "Launching $update_command commmand - over to you."
+echo '==================================================='
 $update_command
-echo "out of command"
 if [ $? -ne 0 ]; then
 	echo "into non 0 exit code"
 	if [ $force_flag -ne 1 ]; then
 		echo "$update_command exited with non-zero exit code. Assuming failure and exiting. Use -f to force checking for new kernel."
+		echo '==================================================='
 		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
-			echo " ok!"
+			echo "ok!"
+			echo '==================================================='
 		else
 			echo "remounting failed. Please do so manually."
+			echo '==================================================='
 		fi
 		exit;
 	fi
@@ -193,6 +200,7 @@ fi
 ##           0 is found kernel and initrd - proceed.
 new=2
 # check for new files in the boot dir
+echo '==================================================='
 echo "looking for new kernel/initrd"
 find /boot -maxdepth 1 -mmin -5 > .newfiles;
 grep vmlinuz .newfiles > .newkernel;
@@ -202,17 +210,20 @@ if [ $? = 0 ]; then
 	read -r answer;
 	case $answer in
 		y|Y)
-			new=1;
+			new=$new - 1;
 			new_kern=$answer;
 			;;
 		*)
 			echo "Did not find correct new kernel. Please do things by hand or hack this script if it doesn't work for you."
+			echo '==================================================='
 			echo "remounting file-system as read-only..."
 			mount -o remount,ro /
 			if [ $? = 0 ]; then
 				echo " ok!"
+				echo '==================================================='
 			else
 				echo "remounting failed. Please do so manually."
+				echo '==================================================='
 			fi
 			exit;
 			;;
@@ -220,22 +231,26 @@ if [ $? = 0 ]; then
 fi
 grep initramfs .newfiles > .newinitrd;
 if [ $? = 0 ]; then
+	echo '==================================================='
 	echo "Found a new initrd: $(cat .newinitrd)";
 	echo "Is this correct? [Yy|Nn]";
 	read -r answer;
 	case $answer in
 		y|Y)
-			new=0;
+			new=$new - 1;
 			new_initrd=$answer;
 			;;
 		*)
 			echo "Did not find correct initrd. Please do things by hand or hack this script if it doesn't work for you."
+			echo '==================================================='
 			echo "remounting file-system as read-only..."
 			mount -o remount,ro /
 			if [ $? = 0 ]; then
 				echo " ok!"
+				echo '==================================================='
 			else
 				echo "remounting failed. Please do so manually."
+				echo '==================================================='
 			fi
 			exit;
 			;;
@@ -245,22 +260,27 @@ fi
 # if yes, push initrd and kernel image to pxeboot, saving the last ones.
 if [ $new = 0 ]; then
 	# backup precedent kernel + initrd
+	echo '==================================================='
 	echo "backing up kernel and initrd to $kernel_name.old and $initrd_name.old..."
 	ssh root@"$server_ip" cp "$server_pxeboot_path"/"$kernel_name" "$server_pxeboot_path"/"$kernel_name".old
 	if [ $? = 0 ]; then
 		echo "ok"
+	echo '==================================================='
 	else
 		if [ $force_flag -ne 1 ]; then
 			echo "failed to copy old kernel. Aborting... use -f flag to circumvent." # Maybe do some more detailed failure treatement?
+			echo '==================================================='
 			exit;
 		fi
 	fi
 	ssh root@"$server_ip" cp "$server_pxeboot_path"/"$initrd_name" "$server_pxeboot_path"/"$initrd_name".old
 	if [ $? = 0 ]; then
 		echo "ok"
+		echo '==================================================='
 	else
 		if [ $force_flag -ne 1 ]; then
 			echo "failed to copy old kernel. Aborting... use -f flag to circumvent." # Maybe do some more detailed failure treatement?
+			echo '==================================================='
 			exit;
 		fi
 	fi
@@ -268,12 +288,15 @@ if [ $new = 0 ]; then
 	scp /boot/"$new_kern" root@"$server_ip":"$server_pxeboot_path"/"$kernel_name";
 	if [ $? -ne 0 ]; then
 		echo "sending the new kernel failed with error code $?. Aborting..."
+		echo '==================================================='
 		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
 			echo " ok!"
+			echo '==================================================='
 		else
 			echo "remounting failed. Please do so manually."
+			echo '==================================================='
 		fi
 		exit;
 	fi
@@ -281,12 +304,15 @@ if [ $new = 0 ]; then
 	scp /boot/"$new_initrd" root@server_ip:"$server_pxeboot_path"/"$initrd_name";
 	if [ $? -ne 0 ]; then
 		echo "sending the new initrd failed with error code $?. Aborting..."
+		echo '==================================================='
 		echo "remounting file-system as read-only..."
 		mount -o remount,ro /
 		if [ $? = 0 ]; then
 			echo " ok!"
+			echo '==================================================='
 		else
 			echo "remounting failed. Please do so manually."
+			echo '==================================================='
 		fi
 		exit;
 	fi
@@ -295,6 +321,7 @@ fi
 ##
 # back to RO
 ##
+echo '==================================================='
 echo "remounting file-system as read-only..."
 mount -o remount,ro /
 if [ $? = 0 ]; then
