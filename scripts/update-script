@@ -168,7 +168,9 @@ fi
 ##
 echo "Launching $update_command commmand - over to you."
 $update_command
+echo "out of command"
 if [ $? -ne 0 ]; then
+	echo "into non 0 exit code"
 	if [ $force_flag -ne 1 ]; then
 		echo "$update_command exited with non-zero exit code. Assuming failure and exiting. Use -f to force checking for new kernel."
 		echo "remounting file-system as read-only..."
@@ -191,6 +193,7 @@ fi
 ##           0 is found kernel and initrd - proceed.
 new=2
 # check for new files in the boot dir
+echo "looking for new kernel/initrd"
 find /boot -maxdepth 1 -mmin -5 > .newfiles;
 grep vmlinuz .newfiles > .newkernel;
 if [ $? = 0 ]; then
