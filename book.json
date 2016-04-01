@@ -2,7 +2,7 @@
 	"title": "Read-Only CentOS 7 Cluster setup",
 	"description": "Step-by-step guide to install a cluster of CentOS 7 machines having their OS served from a main server.",
  	"language": "en",
-	"struture": {
+	"structure": {
 		"readme": "INTRO.md"
 	}
 }
