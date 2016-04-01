@@ -1,19 +1,70 @@
 # CentOS 7 Read-only cluster setup
 ## What is this?
 This is a step-by-step how-to on how to setup a read-only CentOS 7 cluster. It is aimed at anyone wanting to setup a cluster with the following architecture:
-  * A "master" server serving the OS to the other computers through an NFS server for the files and PXE boot for the kernel/initial RAM disk.
+  * A "master" server serving the OS to the other computers through an [NFS](https://en.wikipedia.org/wiki/Network_File_System) server for the files and [PXE](https://en.wikipedia.org/wiki/Preboot_Execution_Environment) boot for the kernel/initial RAM disk.
   * Any number of clients of said server, who will have a read-only root system.
 
 ## Why would I want that?
 There are two big advantages at using the preceding configuration, that can be useful in several situations. Firstly, having a read-only root gives you an increase in security and stability, giving you more peace of mind when exposing computers to the public (such as diskless stations in a library for example), or to code written by other people if you are running servers. The second advantage is that you only have to maintain/administrate "one" computer as all changes are reflected on all the clients. This makes processes such as updates, installation of software and so on much simpler. This setup also gives you the possibilty to run the clients diskless. Interested? Read on!
 
+## Table of Contents:
+1. [Planning your cluster](#planning-your-cluster)
+  1. [General information](#general-information)
+  2. [Diskless or Diskful setup](#diskless-or-diskful-setup)
+2. [Installing the master server](#installing-the-master-server)
+  1. [Installing Centos 7](#installing-centos-7)
+  2. [PXE Server](#pxe-server)
+  3. [NFS Server](#nfs-server)
+3. [Creating the client image](#creating-the-client-image)
+  1. [Setup the disks](#setup-the-disks)
+  2. [Install necessary packages](#install-necessary-packages)
+  3. [Install optional packages](#install-optional-packages)
+  4. [Systemd units](#systemd-units)
+  5. [Configuration files](#configuration-files)
+    1. [Main configuration file](#main-configuration-file)
+    2. [State and writable files/directories](#state-and-writable-files/directories)
+  6. [Create the initrd](#create-the-initrd)
+4. [Pushing the image to the server](#pushing-the-image-to-the-server)
+  1. [Rsync the files](#rsync-the-files)
+  2. [Put the final touches](#put-the-final-touches)
+5. [Final tips and remarks](#final-tips-and-remarks)
+  1. [Caveats](#caveats)
+  2. [Helpful debugging tips](#helpful-debugging-tips)
+  3. [Conclusion](#conclusion)
+
+
+**WORK IN PROGRESS**
 ## Planning your cluster
-The setup is quite flexible. You can have as many clients as you want, the only requirement are for them to be able to access the server over a (safe) network. You will want to choose now if you want your clients to be diskless (Do not store anything on the client, allowing it to have no disk, or use it's disk for other data) or not (store client specific state information on the client's hard drive and not on the server). The two cases will be referred to as a "diskless" and "diskfull" setups.
+### General information
+The setup is quite flexible. You can have as many clients as you want, the only requirement are for them to be able to access the server over a (safe) network. Because the server can serve an arbitrarily large number of clients (depending only of your network connection, but as the server only has to serve the system once, it usually does not have to be able to support a heavy load), you can start even with only two machines, and then add more to your network according to your needs. Before we start, be sure to think about your network setup: you will to know the subnets on which your clients will be to configure the NFS server.
+
+### Diskless or diskful setup
+You will want to choose now if you want your clients to be diskless (Do not store anything on the client, allowing it to have no disk, or use it's disk for other data) or not (store client specific state information on the client's hard drive and not on the server). The two cases will be referred to as a "diskless" and "diskful" setups. Go for a diskless setup for added security and reduced costs, but at the price of being *strictly* stateless. Go for diskful if you want only the OS to be stateless, but want people to be able to store their work and specific configuration options.
 
 Once you know which setup you want, and have the machines (or VMs if you just want to play around) ready, let's start. We will first install the master server, then use one of the clients to create the system that we will deploy. Finally we will push that system to the server, and talk about tips and what to do if things fail.
 
-steps to get a stateless read-only CentOS with a nfs-root.
-=========================================================
+## Installing the master server
+This machine is going to allow the clients to do networking boot using PXE and then serve them their system using NFS. The server's setup is distribution independant as all major distributions support PXE and NFS, but for simplicity CentOS 7 will also be used. First install a base CentOS 7 system, using whatever guide you wish. Once you are satisfied with you setup, come back to this guide.
+
+### PXE server
+Setting up a PXE server is very well documented on the web, so writing another guide here would be quite useless. Good resources I have found and used are:
+
+* (for the server-side, also if you use VMs as clients) [this guide](https://websetnet.com/install-pxe-server-and-configure-pxe-client-on-centos-7/). You may want to note that IPTables is disabled in this guide, which *should* be a security concern to you. Be sure to have a firewall!
+* The [official guide](https://wiki.centos.org/HowTos/PXE/PXE_Setup/) from the Centos 7 wiki, unfortunately very outdated... (xinetd is deprecated).
+* A very comprehensive [guide](http://www.tecmint.com/install-pxe-network-boot-server-in-centos-7/) to be adapted to your setup (in particular the networking section with DNSMasq).
+
+### NFS server
+You will need a functional NFS file server on this machine to serve the system files to the clients. First create the directories where you will store the client's data:
+`master:~# mkdir -p /data/cluster/install`. Then, install the nfs server by installing the following packages: `master:~# yum install nfs-utils nfs-utils-lib`.
+Configuration of which directories we want NFS to export is done in /etc/exports, so you will want to edit that file:
+`master:~# vi /etc/exports`:
+```
+/data/cluster/install <ip range of clients>
+```
+
+If you are running a diskless setup, you will also want to create directories to store each client's state. These directories must all be under the same top level directory and should be named after each client's FQDN (the clients will receive their hostnames from the network): `master:~# mkdir /data/cluster/state/client{1,2,...,n}.mytest.local`
+
+**OLD VERSION FOR REFERENCE**
 
 Create base image 
 -----------------
