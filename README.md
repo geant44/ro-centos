@@ -54,9 +54,8 @@ Setting up a PXE server is very well documented on the web, so writing another g
 * A very comprehensive [guide](http://www.tecmint.com/install-pxe-network-boot-server-in-centos-7/) to be adapted to your setup (in particular the networking section with DNSMasq).
 
 ### NFS server
-You will need a functional NFS file server on this machine to serve the system files to the clients. First create the directories where you will store the client's data:
-`master:~# mkdir -p /data/cluster/install`. Then, install the nfs server by installing the following packages: `master:~# yum install nfs-utils nfs-utils-lib`.
-Configuration of which directories we want NFS to export is done in /etc/exports, so you will want to edit that file:
+You will need a functional NFS file server on this machine to serve the system files to the clients. First create the directories where you will store the client's OS:
+`server:~# mkdir -p /data/cluster/install`. Then, install the nfs server-side software by installing the following packages: `server:~# yum install nfs-utils nfs-utils-lib. Configuration of which directories we want NFS to export is done in `/etc/exports`, so you will want to edit that file:
 `master:~# vi /etc/exports`:
 ```
 /data/cluster/install <ip range of clients>
