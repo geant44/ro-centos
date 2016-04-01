@@ -3,7 +3,6 @@
 	"description": "Step-by-step guide to install a cluster of CentOS 7 machines having their OS served from a main server.",
  	"language": "en",
 	"structure": {
-		"summary": "docs/SUMMARY.md",
-        "readme": "INTRO.md"
+		"readme": "INTRO.md"
 	}
 }
