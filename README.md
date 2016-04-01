@@ -44,10 +44,14 @@ You will want to choose now if you want your clients to be diskless (Do not stor
 Once you know which setup you want, and have the machines (or VMs if you just want to play around) ready, let's start. We will first install the master server, then use one of the clients to create the system that we will deploy. Finally we will push that system to the server, and talk about tips and what to do if things fail.
 
 ## Installing the master server
-This machine is going to allow the clients to do networking boot using PXE and then serve them their system using NFS. The server's setup is distribution independant, but for simplicity CentOS 7 will also be used. First install a base CentOS 7 system, using whatever guide you wish. Once you are satisfied with you setup, come back to this guide.
+This machine is going to allow the clients to do networking boot using PXE and then serve them their system using NFS. The server's setup is distribution independant as all major distributions support PXE and NFS, but for simplicity CentOS 7 will also be used. First install a base CentOS 7 system, using whatever guide you wish. Once you are satisfied with you setup, come back to this guide.
 
 ### PXE server
-_TODO_
+Setting up a PXE server is very well documented on the web, so writing another guide here would be quite useless. Good resources I have found and used are:
+
+* (for the server-side, also if you use VMs as clients) [this guide](https://websetnet.com/install-pxe-server-and-configure-pxe-client-on-centos-7/). You may want to note that IPTables is disabled in this guide, which *should* be a security concern to you. Be sure to have a firewall!
+* The [official guide](https://wiki.centos.org/HowTos/PXE/PXE_Setup/) from the Centos 7 wiki, unfortunately very outdated... (xinetd is deprecated).
+* A very comprehensive [guide](http://www.tecmint.com/install-pxe-network-boot-server-in-centos-7/) to be adapted to your setup (in particular the networking section with DNSMasq).
 
 ### NFS server
 You will need a functional NFS file server on this machine to serve the system files to the clients. First create the directories where you will store the client's data:
