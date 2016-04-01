@@ -62,10 +62,7 @@ Then, install the nfs server-side software by installing the following packages:
 ```
 server:~# yum install nfs-utils nfs-utils-lib
 ```
-Configuration of which directories we want NFS to export is done in `/etc/exports`, so you will want to edit that file:
-```
-master:~# vi /etc/exports
-```
+Configuration of which directories we want NFS to export is done in `/etc/exports`, so you will want to edit that file and add the following line:
 ```
 /data/cluster/install <ip range of clients>(rw,intr,no_root_squash)
 ```
