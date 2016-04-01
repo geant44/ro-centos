@@ -1,7 +1,7 @@
 # Summary
 
 1. [Planning your cluster](docs/1/1.0.md)
-  1. [General information](docs/1/1.1.md)
+  1. [General information](docs/1/1.0.md#general-information)
   2. [Diskless or Diskful setup](docs/1/1.2.md)
 2. [Installing the master server](docs/2/2.0.md)
   1. [Installing Centos 7](docs/2/2.1.md)
