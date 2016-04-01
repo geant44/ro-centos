@@ -55,15 +55,15 @@ Setting up a PXE server is very well documented on the web, so writing another g
 
 ### NFS server
 You will need a functional NFS file server on this machine to serve the system files to the clients. First create the directories where you will store the client's OS:
-```
+```sh
 server:~# mkdir -p /data/cluster/install
 ```
 Then, install the nfs server-side software by installing the following packages:
-```
+```sh
 server:~# yum install nfs-utils nfs-utils-lib
 ```
 Configuration of which directories we want NFS to export is done in `/etc/exports`, so you will want to edit that file and add the following line:
-```
+```sh
 /data/cluster/install <ip range of clients>(rw,intr,no_root_squash)
 ```
 The `rw` option allows clients to write to the nfs shared files. This will at least be necessary during the creation of the files to be served, as well as during updates. Using the `ro` option should not be necessary as clients will alread mount it in read-only mode.
@@ -71,7 +71,7 @@ The `rw` option allows clients to write to the nfs shared files. This will at le
 If you are running a diskless setup, you will also want to create directories to store each client's state (swap, logs, etc...). You must create one directory per client, all in the same top level directory, and named after each client's FQDN. 
 
 * If running a diskless setup, voluntarily not setting a hostname when we will create the client OS installation will cause each client to default to the hostname it will be provided by the network, wether by your dhcp server or another source. Be sure to set your network so that each client has a static hostname across reboots (search per mac-adress configuration in DHCP if you are unsure of how to do this). Creating directories for 5 clients on the mytest.local network would be, for example:
-```
+```sh
 master:~# mkdir -p /data/cluster/state/client{0..4}.mytest.local
 ```
 don't forget to also add this directory to your nfs exports in `/etc/exports`! You must export the state directory; the CentOS script expects to find it's FQDN in the top-level directory that it searches for state.
