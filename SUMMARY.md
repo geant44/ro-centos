@@ -1,6 +1,6 @@
 # Summary
 
-1. [Planning your cluster](docs/1.md#planning-your-cluster)
+1. [Planning your cluster](docs/1.md)
   1. [General information](docs/1.md#general-information)
   2. [Diskless or Diskful setup](docs/1.md#diskless-or-diskful-setup)
 2. [Installing the master server](docs/2.md#installing-the-master-server)
