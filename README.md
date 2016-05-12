@@ -91,6 +91,7 @@ You will need to setup a server with an nfs export that will be used as the root
 If you also wish to keep your machine states in the nfs server, create another nfs export, the path of which goes in the CLIENTSTATE field in /etc/sysconfig/readonly-root. Inside the top directory of this export, create a folder containing the FQDN of each node you will deploy.
 
 ### create the initrd
+
 #### first image generation
 create a list of loaded kernel modules using the following command:
 ```xs=$(lsmod|grep -v Module|awk '{printf "%s ",$1}')``` (do not hesitate to check echo $xs to be sure you have not forgotten anything)
