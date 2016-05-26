@@ -3,6 +3,6 @@
 	"description": "Step-by-step guide to install a cluster of Cent-OS 7 machines having their OS served from a main server",
  	"language": "en",
 	"structure": {
-		"readme": "intro.md"
+		"readme": "INTRO.md"
 	}
 }
